@@ -1,4 +1,5 @@
 import { GetStaticProps } from 'next';
+import { useState } from 'react';
 import Head from 'next/head'
 import { FiUser, FiCalendar } from 'react-icons/fi'
 import { getPrismicClient } from '../services/prismic';
@@ -6,6 +7,7 @@ import Prismic from '@prismicio/client'
 import { format } from 'date-fns';
 import ptBR from 'date-fns/locale/pt-BR';
 import Link from 'next/link'
+import Header from '../components/Header';
 
 import commonStyles from '../styles/common.module.scss';
 import styles from './home.module.scss';
@@ -30,6 +32,39 @@ interface HomeProps {
 }
 
 export default function Home({ postsPagination }: HomeProps) {
+  const [posts, setPosts] = useState<Post[]>(postsPagination.results)
+  const [nextPage, setNextPage] = useState(postsPagination.next_page)
+  const [currentPage, setCurrentPage] = useState(1)
+
+  async function handleNextPage() {
+    if(currentPage !== 1 && nextPage === null)
+      return
+    
+    const response = await fetch(`${nextPage}`).then(result => result.json())
+    setNextPage(response.next_page)
+    setCurrentPage(response.page)
+
+    const newPosts = response.results.map(post => {
+      return {
+        uid: post.uid,
+        first_publication_date: format(
+          new Date(post.first_publication_date,),
+           "PP",
+          {
+            locale: ptBR,
+          }
+        ),
+        data: {
+          title: post.data.title,
+          subtitle: post.data.subtitle,
+          author: post.data.author,
+        }
+      }
+    })
+
+    setPosts([...posts, ...newPosts])
+  }
+
   return(
     <>  
       <Head>
@@ -38,13 +73,11 @@ export default function Home({ postsPagination }: HomeProps) {
       
       <main className={commonStyles.container}>  
 
-        <header className={styles.header}>
-          <img src="/Logo.svg" alt="logo"/>
-        </header>
+        <Header />
 
         <div className={styles.post}>
           {
-            postsPagination.results.map(result => (
+            posts.map(result => (
               <Link 
                 key={result.uid} 
                 href={`/post/${result.uid}`}
@@ -55,7 +88,15 @@ export default function Home({ postsPagination }: HomeProps) {
                   <div className={commonStyles.info}>
                     <div>
                       <FiCalendar />
-                      <time>{result.first_publication_date}</time>
+                      <time>{
+                          format(new Date(result.first_publication_date),
+                                "PP",
+                              {
+                                locale: ptBR,
+                              }
+                            )
+                          }
+                    </time>
                     </div>
 
                     <div>
@@ -68,7 +109,18 @@ export default function Home({ postsPagination }: HomeProps) {
             ))
           }
         </div>
-
+        
+        {
+          nextPage ?
+            <div 
+            className={styles.buttonLoadMorePosts}
+            onClick={handleNextPage}
+            >
+              Carregar mais posts
+            </div>
+          : <></>
+        }
+       
       </main>
     </>
   )
@@ -86,7 +138,7 @@ export const getStaticProps: GetStaticProps = async () => {
           'post.author', 
           'post.subtitle'
         ],
-        pageSize: 5,
+        pageSize: 1,
     }
   );
 
@@ -94,13 +146,7 @@ export const getStaticProps: GetStaticProps = async () => {
   const results = postsResponse.results.map(post => {
       return {
         uid: post.uid,
-        first_publication_date: format(
-          new Date(post.first_publication_date,),
-           "PP",
-          {
-            locale: ptBR,
-          }
-        ),
+        first_publication_date: post.first_publication_date,
         data: {
           title: post.data.title,
           subtitle: post.data.subtitle,
@@ -109,12 +155,14 @@ export const getStaticProps: GetStaticProps = async () => {
     }
   })
 
+  const postsPagination = {
+    results,
+    next_page: postsResponse.next_page
+  }
+
   return {
       props: {
-        postsPagination: {
-          results,
-          next_page: null
-        }
+        postsPagination
       },
       revalidate: 60 * 60 * 24 //24 hrs
   }

@@ -5,13 +5,14 @@ import { RichText } from "prismic-dom"
 import { format } from 'date-fns';
 import ptBR from 'date-fns/locale/pt-BR';
 import { getPrismicClient } from '../../services/prismic';
+import Prismic from '@prismicio/client'
 import { FiCalendar, FiUser, FiClock } from 'react-icons/fi'
+import { useRouter } from 'next/router';
 
 import commonStyles from '../../styles/common.module.scss';
 import styles from './post.module.scss';
 
 interface Post {
-  slug: string;
   first_publication_date: string | null;
   data: {
     title: string;
@@ -23,7 +24,7 @@ interface Post {
       heading: string;
       body: {
         text: string;
-      };
+      }[];
     }[];
   };
 }
@@ -33,73 +34,110 @@ interface PostProps {
 }
 
 export default function Post({ post }: PostProps) {
-    return(
-      <>
-        <Head>
-          <title>{post.slug} | teste</title>
-          <link
-            rel="shortcut icon" 
-            href="/Logo.svg" 
-            type="image/x-icon" 
-          />
-        </Head>
+  const totalWords = post.data.content.reduce((total, contentItem) => {
+    total += contentItem.heading.split(' ').length
 
-        <Header />
+    const words = contentItem.body.map(item => item.text.split(' ').length)
+    words.map(word => (total += word))
 
-        <div className={styles.containerImg}>
-          <img src={post.data.banner.url} alt={post.slug}/>
-        </div>
+    return total
+  }, 0)
+  const readTime = Math.ceil(totalWords/200)
 
-        <div className={commonStyles.container}>
+  const router = useRouter()
 
-            <div className={styles.post}>
+  if(router.isFallback){
+    return <h1>Carregando...</h1>
+  }
 
-              <div className={styles.mainPostInfo}>
-                <h1>{post.data.title}</h1>
-                <div className={commonStyles.info}>
-                    <div>
-                      <FiCalendar />
-                      <time>{post.first_publication_date}</time>
-                    </div>
+  return(
+    <>
+      <Head>
+        <title>{post.data.title} | teste</title>
+        <link
+          rel="shortcut icon" 
+          href="/Logo.svg" 
+          type="image/x-icon" 
+        />
+      </Head>
 
-                    <div>
-                      <FiUser />
-                      <span>{post.data.author}</span>
-                    </div>
+      <Header />
 
-                    <div>
-                      <FiClock />
-                      <span>4 min</span>
-                    </div>
-                </div>
+      <div className={styles.containerImg}>
+        <img src={post.data.banner.url} alt={post.data.title}/>
+      </div>
+
+      <div className={commonStyles.container}>
+
+          <div className={styles.post}>
+
+            <div className={styles.mainPostInfo}>
+              <h1>{post.data.title}</h1>
+              <div className={commonStyles.info}>
+                  <div>
+                    <FiCalendar />
+                    <time>{format(
+                      new Date(post.first_publication_date,),
+                      "PP",
+                      {
+                        locale: ptBR,
+                      }
+                    )}
+                  </time>
+                  </div>
+
+                  <div>
+                    <FiUser />
+                    <span>{post.data.author}</span>
+                  </div>
+
+                  <div>
+                    <FiClock />
+                    <span>{readTime} min</span>
+                  </div>
               </div>
-              
-              {post.data.content.map((ctt, index) => (
-                <article 
-                  key={index} 
-                  className={styles.paragraph}
-                >
-                  <h2>{ctt.heading}</h2>
-                  <p>{ctt.body.text}</p>
-                </article>
-              ))}
-
             </div>
+            
+            {post.data.content.map((ctt, index) => (
+              <article 
+                key={index} 
+                className={styles.paragraph}
+              >
+                <h2>{ctt.heading}</h2>
+                <div
+                  className={styles.postContent}
+                  dangerouslySetInnerHTML={{__html: RichText.asHtml(ctt.body)}}
+                />
+              </article>
+            ))}
 
-        </div>
+          </div>
 
-      </>
-    )
+      </div>
+
+    </>
+  )
 }
+
 
 export const getStaticPaths: GetStaticPaths = async () => {
+  const prismic = getPrismicClient()
+  const posts = await prismic.query([
+    Prismic.Predicates.at('document.type', 'post')
+  ])
+
+  const paths = posts.results.map(post => {
+    return {
+      params: { slug: post.uid } 
+    }
+  })
+
   return {
-      paths: [
-          // { params: { slug: 'nomeSlug' } }  quais páginas serão carregadas no build da aplicação
-      ],
-      fallback: 'blocking'
+      paths,
+      fallback: true
   }
 }
+
 
 export const getStaticProps: GetStaticProps = async ({ params }) => {
   const { slug } = params
@@ -109,22 +147,20 @@ export const getStaticProps: GetStaticProps = async ({ params }) => {
   const response = await prismic.getByUID('post', String(slug), {})
   
   const post = {
-      slug,
-      first_publication_date: format(
-        new Date(response.first_publication_date,),
-         "PP",
-        {
-          locale: ptBR,
-        }
-      ),
+      uid: response.uid,
+      first_publication_date: response.first_publication_date,
       data: {
         title: response.data.title,
+        subtitle: response.data.subtitle,
         banner: {
           url: response.data.banner.url
         },
         author: response.data.author,
         content: response.data.content.map(content => (
-          {heading: content.heading, body: {text: RichText.asText(content.body)}}
+          {
+            heading: content.heading, 
+            body: [...content.body]
+          }
         ))
       }
   }

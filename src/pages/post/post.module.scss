@@ -1,9 +1,11 @@
 .containerImg{
     img{
         max-width: 100%;
-        min-height: 400px;
+        height: 400px;
     }
     margin-bottom: 5rem;
+    display: flex;
+    justify-content: center;
 }
 
 .post{
@@ -19,12 +21,26 @@
         h2{
             margin-bottom: 2rem;
         }
-
-        p{
-            margin-bottom: 2rem;
-            line-height: 2rem;
-            font-size: 1.125rem;
-            color: var(--gray-300);
-        }
     }
 }   
+
+.postContent{
+    p, span, a, ul{
+        line-height: 1.8rem;
+        font-size: 1.125rem;
+        color: var(--gray-300);
+        margin-bottom: 1.8rem;
+    }
+
+    strong{
+        font-weight: bold;
+    }
+
+    ul{
+        padding-left: 1.5rem;
+
+        li{
+            margin: 0.5rem 0;
+        }
+    }
+}
