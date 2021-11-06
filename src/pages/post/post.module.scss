@@ -1,1 +1,30 @@
-// TODO
+.containerImg{
+    img{
+        max-width: 100%;
+        min-height: 400px;
+    }
+    margin-bottom: 5rem;
+}
+
+.post{
+    h1{
+        margin-bottom: 1.5rem;
+    }
+
+    .mainPostInfo{
+        margin-bottom: 4rem;
+    }
+
+    .paragraph{
+        h2{
+            margin-bottom: 2rem;
+        }
+
+        p{
+            margin-bottom: 2rem;
+            line-height: 2rem;
+            font-size: 1.125rem;
+            color: var(--gray-300);
+        }
+    }
+}   

@@ -5,6 +5,7 @@ import { getPrismicClient } from '../services/prismic';
 import Prismic from '@prismicio/client'
 import { format } from 'date-fns';
 import ptBR from 'date-fns/locale/pt-BR';
+import Link from 'next/link'
 
 import commonStyles from '../styles/common.module.scss';
 import styles from './home.module.scss';
@@ -35,30 +36,35 @@ export default function Home({ postsPagination }: HomeProps) {
         <title>Home | spacetraveling</title>
       </Head>
       
-      <main className={styles.container}>  
+      <main className={commonStyles.container}>  
 
         <header className={styles.header}>
-          <img src="Logo.svg" alt="logo"/>
+          <img src="/Logo.svg" alt="logo"/>
         </header>
 
-        <div className={styles.posts}>
+        <div className={styles.post}>
           {
             postsPagination.results.map(result => (
-              <a key={result.uid} href=''>
-                <h1>{result.data.title}</h1>
-                <p>{result.data.subtitle}</p>
-                <div className={styles.info}>
-                  <div>
-                    <FiCalendar />
-                    <time>{result.first_publication_date}</time>
-                  </div>
+              <Link 
+                key={result.uid} 
+                href={`/post/${result.uid}`}
+              >
+                 <a>
+                  <h1>{result.data.title}</h1>
+                  <p>{result.data.subtitle}</p>
+                  <div className={commonStyles.info}>
+                    <div>
+                      <FiCalendar />
+                      <time>{result.first_publication_date}</time>
+                    </div>
 
-                  <div>
-                    <FiUser />
-                    <span>{result.data.author}</span>
+                    <div>
+                      <FiUser />
+                      <span>{result.data.author}</span>
+                    </div>
                   </div>
-                </div>
-              </a>
+                </a>
+              </Link>
             ))
           }
         </div>
