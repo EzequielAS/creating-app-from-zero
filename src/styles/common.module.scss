@@ -3,7 +3,7 @@
     margin: 0 auto;
 }
 
-.info{
+.info {
     display: flex;
     align-items: center;
     color: var(--gray-400);
@@ -23,4 +23,18 @@
             margin-right: 0;
         }
     }
+}
+
+.preview {
+    display: block;
+    width: 100%;
+    max-width: 700px;
+    margin: 5.5rem auto;
+    background: var(--gray-100);
+    color: var(--background);
+    text-align: center;
+    border-radius: 4px;
+    padding: 1rem;
+    font-weight: 600;
+    font-size: 1.125rem;
 }
